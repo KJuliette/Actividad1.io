@@ -1,0 +1,368 @@
+---
+title: "Actividad 1 Viviendas Faltantes Cali"
+author: "Karen Juliette Conde Barrero"
+date: "2023-08-12"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(paqueteMET)
+data("vivienda_faltantes")
+library(conflicted)
+library(dplyr)
+library(mice)
+library(naniar)
+library(ggplot2)
+library(tidyverse)
+library(dplyr)
+library(simputation)
+library(DescTools)
+library(knitr)
+library(kableExtra)
+```
+<br/>
+<image src="C:/Users/karen/Downloads/Cali_Imagen.jpg" alt="Descripción de la imagen">
+
+## **1. Introducción**
+
+Estimados directivos de B&C (Bines y Casas), reciban un respetuoso saludo y esperamos se encuentren muy bien. De ante mano, agradecemos por proporcionarnos su base de datos, para el análisis del presente informe, el cual daremos a conocer los resultados en este documento. 
+Deseamos poder cumplir con sus expectativas en cuanto al análisis realizado con la información verificada, y pueda ser útil para la toma decisiones sobre su negocio; asi mismo puedan definir el tipo de mercado al que desean llegar y establecer los mejores precios de venta y servicios; promoviendo el crecimiento económico de la compañía.
+
+
+## **2. Objetivos**
+
+El objetivo del estudio realizado es proporcionar un análisis descriptivo de los datos “vivienda_faltantes” para identificar patrones que ayuden al crecimiento económico de los inmuebles de la empresa B&C.
+
+## **3. Métodos**
+
+Inicialmente, se descargo la base de datos “vivienda_faltantes”, y se añadió a la librería. Luego se incluyeron algunos paquetes necesarios para el análisis y visualización de datos, como: mice, naniar, ggplot2, tidyverse, dplyr, simputation, entre otros.
+
+Posteriormente se realizó una verificación general de la base de datos, para identificar las variables con las que disponemos para realizar el análisis estadístico sobre las “vivienda_faltantes”, de la empresa B&C.
+
+Las variables identificadas son:
+
+Variables cualitativas: zona, piso, estrato, tipo_vivienda, barrio.
+Variables cuantitativas: precio_millones, area_construida, parqueadero, baños, habitaciones.
+Variables que no se incluirán en el análisis: id, longitud, latitud.
+
+### a. Limpieza de datos:
+Para este proceso de limpieza de datos tomamos una muestra de 1000 registros por 13 variables para asi identificar los datos faltantes que presenta la base de datos.
+<br/>
+
+#### **Verificación de los datos faltantes**
+Para realizar la verificación de los datos faltantes, se realizo una muestra de 1000 registros x 13 variables.
+
+```{r, echo=FALSE}
+#Muestra a revisar: 
+set.seed(123)
+datosNA<-sample_n(vivienda_faltantes, 1000)
+str(datosNA)
+```
+<br/>
+A continuación, se mostrar una grafica donde se visualizan los datos faltantes:
+
+```{r, echo=FALSE}
+grafico <- md.pattern(vivienda_faltantes, rotate.names=TRUE)
+```
+<br/>
+Posteriormente realizamos la limpieza de los datos y para ellos se realiza lo siguiente:
+
+**a.	Eliminamos los registros que no cuentan con ningún dato y que cuentan con un solo dato en las filas.**
+```{r, echo=FALSE}
+vivienda_faltantes <- subset(vivienda_faltantes,id!="NA")
+```
+<br/>
+```{r, echo=FALSE}
+grafico <- md.pattern(vivienda_faltantes, rotate.names=TRUE)
+```
+<br/>
+**b.	Cambiamos los nombres de las variables de la base de datos para tener mayor compresión de la información.** 
+
+```{r, echo=FALSE}
+nuevos_nombres_de_variables <- c("id", "zona", "piso", "estrato", "precio_millones", "area_construida", "parqueadero", "banios", "habitaciones", "tipo_vivienda", "barrio", "longitud", "latitud")
+colnames(vivienda_faltantes) <- nuevos_nombres_de_variables
+```
+<br/>
+```{r, echo=FALSE}
+grafico <- md.pattern(vivienda_faltantes, rotate.names=TRUE)
+```
+<br/>
+**c.	Reemplazamos los datos faltantes que identificamos en la base de datos para las variables de “piso” y “parqueadero”, este proceso se llevara a cabo por medio de la imputación de los datos calculados a través de la media y la moda.**
+
+**Imputación por la moda:**
+Por medio de la variable cualitativa “piso”, reemplazamos los NA por el valor que nos arroja la moda, de esta forma podemos tener una mejor visualización para el análisis de nuestro informe y seguido se realiza la imputación.
+Como se muestra a continuación:
+
+```{r, echo=FALSE}
+#definir la fucnión moda
+mode <- function(x) {
+   return(as.numeric(names(which.max(table(x)))))
+}
+#calcular la moda para la piso
+moda_piso <- mode(vivienda_faltantes$piso)
+print(moda_piso)
+```
+
+<br/>
+De esta forma podemos observar que los valores por NA no se muestran en la variable piso.
+
+```{r, echo=FALSE}
+barplot(table(vivienda_faltantes$piso), col = c(4, rep("#CCFFCC", 4)))
+legend("topright", "Moda", fill = 4)
+```
+<br/>
+# **aplicando la moda a piso, imputación:**
+```{r, echo=FALSE}
+#aplicando la moda a piso, imputación
+moda_piso <- mode(vivienda_faltantes$piso)
+vivienda_faltantes$piso[is.na(vivienda_faltantes$piso)] <- moda_piso
+grafico <- md.pattern(vivienda_faltantes, rotate.names = TRUE)
+```
+<br/>
+
+**imputación por la media:**
+Por medio de la variable cuantitativa “parqueadero”, reemplazamos los NA por el valor que nos arroja la media, de esta forma podemos tener una mejor visualización para el análisis de nuestro informe y seguido se realiza la imputación y seguidamente realizamos el redondeo de los datos.
+
+Como se muestra a continuación:
+<br/>
+```{r, echo=FALSE}
+#calculando la media a parqueadero
+media_parqueadero <- round(mean(vivienda_faltantes$parqueadero))
+print(media_parqueadero)
+```
+<br/>
+Debido a que, en la base de datos, no se encuentra datos faltantes:
+```{r, echo=FALSE}
+#aplicando la media a parqueadero, imputación
+media_parqueadero <- round(mean(vivienda_faltantes$parqueadero, na.rm = TRUE))
+vivienda_faltantes$parqueadero[is.na(vivienda_faltantes$parqueadero)] <- media_parqueadero
+grafico1 <- md.pattern(vivienda_faltantes, plot = TRUE, rotate.names = TRUE)
+```
+<br/>
+De esta forma podemos observar que los valores por NA no se muestran en la variable parqueadero.
+Como se observa en el gráfico, ya no hay valores NA en las variables de la base de datos. 
+<br/>
+
+**d.	Estandarizamos los nombres de las variables de “tipo_vivienda” y “barrio”, asimismo se elimina las variables que no se incluirán en el análisis: id, longitud, latitud.**
+<br/>
+```{r, echo=FALSE}
+#creo una copia de la base de datos para no alterar la información inicial
+estandarizacion <- data.frame(vivienda_faltantes)
+```
+<br/>
+•	Identificamos que la base de datos presenta nombre en minúscula y mayúscula, como por ejemplo  “APARTAMENTO”, seguido a esto, se menciona la palabra “apto” y poder dejar un solo nombre que identifique la palabra  “apartamento”, y de esta forma dejar estandarizada la base de datos.
+<br/>
+```{r, echo=FALSE}
+#tabla para visualizar los datos de una variable, con esta también puedo crear un gráfico 
+table(vivienda_faltantes$tipo_vivienda)
+```
+<br/>
+# Aplicación de la estandarización de la variable tipo vivienda
+```{r, echo=FALSE}
+# Estandarizar los valores de la variable "tipo_vivienda"
+estandarizacion <- estandarizacion %>% mutate(tipo_vivienda = recode(tipo_vivienda, "Apartamento" = "apartamento", "APARTAMENTO" = "apartamento", "apto" = "apartamento", "Casa" = "casa", "casa" = "casa", "CASA" = "casa", "NA" = "NA"))
+
+# Verificar los cambios de la variable tipo_vivienda
+unique(estandarizacion$tipo_vivienda)
+```
+<br/>
+#Presentamos la estandarización en la siguiente Tabla, de la variable tipo de vivienda:
+```{r, echo=FALSE}
+#tabla de una variable de la vivienda
+table(estandarizacion$tipo_vivienda)
+```
+<br/>
+Se estandariza la variable barrio, dado que los nombres se encuentran con pronombres "las, los, la, el" al inicio, con el objetivo de generalizar la información de la base de datos seguido a lo anterior se eliminarán los pronombres.
+
+A continuación, se presenta la tabla, donde se observarán los datos eliminados respecto a los pronombres de los barrios; asi mismo se eliminaron, las variables que no se incluirán en el análisis de los resultados, estas variables son: id, longitud, y latitud.
+
+<br/>
+```{r, echo=FALSE}
+#eliminar los pronombres de los barrios para estandarizar y eliminar las columnas id, longitud, latitud
+estandarizacion$barrio <- gsub("^(los|las|el|la)\\s+", "", estandarizacion$barrio)
+estandarizacion$id <- NULL
+estandarizacion$longitud <- NULL
+estandarizacion$latitud <- NULL
+kable(estandarizacion, "html") %>%
+  kable_styling("striped") %>%
+  scroll_box(height = "300px")
+```
+<br/>
+
+## **4. Resultados**
+<br/>
+**4.1 Precio de las viviendas en diferentes zonas de Cali.**
+<br/>
+
+Variables:
+Precio en millones
+<br/>
+Zona
+<br/>
+
+En la grafica podemos ver la agrupación de las viviendas por precio y por zona de la ciudad de Cali, la mayor concentración se encuentra en la zona Oeste con un promedio en precio de 679 millones, seguido de la zona sur, con un promedio de en precio de 427 millones, la zona que presente menor precio es la de zona oriente por un valor de 229 millones. De esta manera podemos ver los precios en las diferentes zonas de la ciudad.
+
+<br/>
+```{r, echo=FALSE}
+datos <- estandarizacion[, c("zona", "precio_millones")]
+promedio_por_zona <- datos %>%
+  group_by(zona) %>%
+  summarise(promedio_precio = round(mean(precio_millones))) 
+
+grafico <- ggplot(data = promedio_por_zona, mapping = aes(x = zona,
+                                                y = promedio_precio)) +
+  geom_bar(stat = "identity", aes(fill = zona)) +
+  geom_text(aes(label = promedio_precio), vjust = -0.5) +
+  labs(title = "Precio Promedio de Viviendas por Zona en Cali",
+       x = "Zona",
+       y = "precio promedio") +
+  theme_minimal() + 
+  theme(axis.text.x = element_text(angle = 20, hjust = 0.5)) +
+  scale_fill_manual(values = c("#FFCCCC", "#99CCFF", "#CCFFCC", "#FFFF99", "#FFD699"))
+
+grafico
+```
+
+
+
+
+<br/>
+**4.2 Tipo de vivienda más vendidas en Cali.**
+<br/>
+<br/>
+Variables:
+Tipo de vivienda
+<br/>
+Respeto al tipo de inmueble, los apartamentos fueron el tipo de vivienda más común y opcionados por caleños para vivir con un (61,3%), mientras que las casas ocupan la segunda opción por (38,7%).
+<br/>
+<br/>
+```{r, echo=FALSE}
+# Crear un dataframe con la información
+datos <- data.frame(
+  tipo = c("Apartamento", "Casa"),
+  cantidad = c(5106, 3221)
+)
+
+# Calcular los porcentajes
+datos$porcentaje <- (datos$cantidad / sum(datos$cantidad)) * 100
+
+# Definir colores pasteles
+colores_pasteles <- c("#99CCFF", "#FFFF99")
+
+# Crear el gráfico de torta
+grafico_torta <- ggplot(data = datos, aes(x = "", y = porcentaje, fill = tipo)) +
+  geom_bar(stat = "identity", width = 1, color = "white") +
+  coord_polar(theta = "y") +
+  labs(title = "Tipo de vivienda mas vendidas en Cali",
+       fill = " ") +
+  scale_fill_manual(values = colores_pasteles) +
+  theme_void() +
+  theme(legend.position = "bottom") +
+  geom_text(aes(label = paste0(round(porcentaje, 1), "%")), position = position_stack(vjust = 0.5))
+
+# Mostrar el gráfico
+print(grafico_torta)
+
+```
+<br/>
+
+<br/>
+
+**4.3 Características más buscadas en las viviendas en Cali.**
+<br/>
+<br/>
+<br/>
+Entre las características más destacadas y comunes a los tipos de  viviendas encontramos que el número de habitaciones que más se repite para apartamentos de tres(3) y para casas cuatro(4), para el caso de los parqueadero tenemos en apartamentos uno(1) y para casas dos(2), por ultimo tenemos en baños para apartamentos dos(2) y para casas cuatro(4).
+<br/>
+lo podemos apreciar de mejor manera en la tabla y el grafico:
+<br/>
+```{r, echo=FALSE}
+moda_por_grupo <- aggregate(cbind(habitaciones, banios, parqueadero) ~ tipo_vivienda, data = estandarizacion, FUN = function(x) {
+  tab <- table(x)
+  as.numeric(names(tab)[tab == max(tab)])
+})
+moda_por_grupo
+```
+
+<br/>
+
+```{r, echo=FALSE}
+ggplot(moda_por_grupo, aes(x = tipo_vivienda)) +
+  geom_bar(aes(y = habitaciones, fill = "Cantidad de Habitaciones"), stat = "identity", position = "dodge") +
+  geom_bar(aes(y = banios, fill = "Cantidad de banios"), stat = "identity", position = "dodge") +
+  geom_bar(aes(y = parqueadero, fill = "Cantidad de parqueaderos"), stat = "identity", position = "dodge") +
+  geom_text(aes(y = habitaciones, label = habitaciones), vjust = -0.2) +
+geom_text(aes(y = banios, label = banios), vjust = -0.2) +
+  geom_text(aes(y = parqueadero, label = parqueadero), vjust = -0.2) +
+  labs(x = "Tipo de Vivienda", y = "Moda", title = "Moda de Cantidad de Habitaciones, parqueaderos y baños por Tipo de Vivienda") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 20, hjust = 1)) +
+  scale_fill_manual(values = c("Cantidad de Habitaciones" = "#99CCFF", "Cantidad de banios" = "#FFCCCC", "Cantidad de parqueaderos" = "#FFFF99"),
+labels = c("Cantidad de Habitaciones" = "Habitaciones", "Cantidad de banios" = "banios", "Cantidad de parqueaderos" = "Parqueaderos"),
+                    labs(fill = "Variables"))
+```
+<br/>
+<br/>
+En esta grafica de dispersión podemos apreciar de mejor manera la relación que existe entre el valor de la vivienda y la cantidad de habitaciones que tiene, cada punto representa una vivienda y su ubicación con respecto a la cantidad de habitaciones y su precio, de esta manera podemos identificar la tendencia con respecto al precio y sus características.
+<br/>
+<br/>
+```{r, echo=FALSE}
+ggplot(estandarizacion, aes(x = habitaciones, y = precio_millones, color = habitaciones)) +
+  geom_point() +
+  labs(title = "Relación entre Precio y Cantidad de Habitaciones",
+       x = "Cantidad de Habitaciones",
+       y = "Precio") +
+  theme_minimal()
+  scale_color_gradient(low = "blue", high = "red")
+```
+<br/>
+<br/>
+En esta grafica de dispersión podemos apreciar de mejor manera la relación que existe entre el valor de la vivienda y la cantidad de parqueaderos que tiene, cada punto representa una vivienda y su ubicación con respecto a la cantidad de parqueaderos y su precio, de esta manera podemos identificar la tendencia con respecto al precio y sus características.
+<br/>
+<br/>
+```{r, echo=FALSE}
+ggplot(estandarizacion, aes(x = parqueadero, y = precio_millones, color = parqueadero)) +
+  geom_point() +
+  labs(title = "Relación entre Precio y Cantidad de Parqueaderos",
+       x = "Cantidad de Parqueaderos",
+       y = "Precio") +
+  theme_minimal() +
+  scale_color_gradient(low = "blue", high = "red")
+```
+<br/>
+<br/>
+En esta grafica de dispersión podemos apreciar de mejor manera la relación que existe entre el valor de la vivienda y la cantidad de baños que tiene, cada punto representa una vivienda y su ubicación con respecto a la cantidad de baños y su precio, de esta manera podemos identificar la tendencia con respecto al precio y sus características.
+<br/>
+<br/>
+```{r, echo=FALSE}
+ggplot(estandarizacion, aes(x = banios, y = precio_millones, color = banios)) +
+  geom_point() +
+  labs(title = "Relación entre Precio y Cantidad de baños",
+       x = "Cantidad de baños",
+       y = "Precio") +
+  theme_minimal() +
+  scale_color_gradient(low = "blue", high = "red")
+```
+<br/>
+<br/>
+<br/>
+
+## **5. Conclusiones**
+<br/>
+En conclusión, con el análisis realizado sobre la base de datos proporcionada por la compañía, pudimos identificar los siguientes aspectos:
+<br/>
+a.	La alta concentración por precio en millones según las zonas de mayor impacto por precio.
+<br/>
+b.	La cantidad de inmuebles que presentan en la ciudad de Cali y el impacto que se tiene tanto para apartamentos como para casas al momento de los caleños tomar como opción de vivienda en la ciudad.
+<br/>
+c.	Si bien al momento de seleccionar una vivienda nos encontramos con cierta tendencia a características comunes, tanto en apartamentos como en casas, la también nos podemos encontrar con diversidad de características que son acorde para necesidad para todo tipo de cliente.
+
+<br/>
+
+#### **6. Anexos**
+
+<br/>
+
+
+
